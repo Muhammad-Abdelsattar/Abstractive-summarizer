@@ -1,0 +1,98 @@
+model:
+  model_id: bigscience/mt0-base
+
+  use_peft_config: prefix
+
+  prefix_tuning_config:
+    task_type: "SEQ_2_SEQ_LM"
+    num_virtual_tokens: 20
+    inference_mode: False
+    prefix_projection: True
+
+  lora_config:
+    task_type: "SEQ_2_SEQ_LM"
+    inference_mode: False
+    r: 8
+    lora_alpha: 32
+    lora_dropout: 0.1
+
+  generation_config:
+    max_length: 128
+    num_beams: 4
+    top_k: 20
+    top_p: null
+    do_sample: True
+    temperature: null
+    no_repeat_ngram_size: 4
+    penalty_alpha: null
+    num_return_sequences: 1
+    early_stopping: True
+    
+
+
+training:
+  trainer:
+    devices: auto
+    num_nodes: 1
+    max_epochs: 5
+    max_steps: -1
+    accumulate_grad_batches: 32
+    precision: 32 # should be set to 16 for O1 and O2 to enable the AMP.
+    accelerator: gpu
+    log_every_n_steps: 5
+    val_check_interval: 1.0
+    # resume_from_checkpoint: null
+    num_sanity_val_steps: 0
+    enable_checkpointing: True
+    logger: False
+    # strategy: null
+    gradient_clip_val: 1.0
+
+  callbacks:
+    checkpointing:
+      _target_: lightning.pytorch.callbacks.ModelCheckpoint
+      dirpath: ./checkpoints/
+      monitor: Validation Loss
+      save_on_train_epoch_end: True
+      every_n_epochs: 1
+      save_top_k: 2
+
+    model_summary:
+      _target_: lightning.pytorch.callbacks.ModelSummary
+
+
+  optim:
+    optimizers:
+      AdamW:
+        lr: 1e-3
+        betas: [0.9,0.999]
+        weight_decay: 0.0
+
+    lr_schedulers:
+      ConstantLR:
+        factor: 0.9
+        total_iters: 5
+
+  checkpoint: null
+
+
+data:
+  files:
+    train_data_source: /workspaces/codespaces-blank/test_data.csv
+    valid_data_source: /workspaces/codespaces-blank/test_data.csv
+    test_data_source: /workspaces/codespaces-blank/test_data.csv
+
+
+  params:
+    slices: # To use only a subset of the dataset 
+      train: [0,8000]
+      valid: [0,1000]
+      test: [0,1000]
+  
+    train_batch_size: 1
+    valid_test_batch_size: 1
+    source_key: source
+    target_key: target
+    source_max_len: 2048
+    target_max_len: 256
+    num_workers: 0

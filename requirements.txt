@@ -1,0 +1,8 @@
+hydra-core
+lightning
+omegaconf
+pandas
+peft
+torch
+transformers
+rouge
