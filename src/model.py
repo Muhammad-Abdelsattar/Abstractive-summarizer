@@ -3,7 +3,8 @@ from omegaconf import DictConfig
 from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import ConstantLR
+from torch.optim.lr_scheduler import (ConstantLR,
+                                      LinearLR)
 from transformers import (AutoModelForSeq2SeqLM,
                           AutoTokenizer)
 
@@ -71,15 +72,39 @@ class AbstractiveSummarizationModule(LightningModule):
 
 
     def configure_optimizers(self):
-        optim_conf = self.config.training.optim
+        optim_config = self.config.training.optim
+        
         optimizer = AdamW(self.model.parameters(),
-                          **optim_conf.optimizers.AdamW)
-        scheduler = ConstantLR(optimizer = optimizer,
-                               **optim_conf.lr_schedulers.ConstantLR)
-        return {"optimizer": optimizer,
-                "lr_scheduler": scheduler}
+                          **optim_config.optimizers.AdamW)
+        if(optim_config.lr_schedulers.use not in ["ConstantLR","LinearLR"]):
+            return optimizer
+        
+        if(optim_config.lr_schedulers.use == "ConstantLR"):
+            scheduler = ConstantLR(optimizer = optimizer,
+                                   **optim_config.lr_schedulers.ConstantLR)
+            return {"optimizer": optimizer,
+                    "lr_scheduler": {
+                        "scheduler":scheduler,
+                        "interval":"epoch",
+                        "frequency":1}
+                   }
+  
+        else:
+            total_iters = self.config.training.trainer.max_epochs * (self.config.data.params.slices.train[1] - self.config.data.params.slices.train[0]) // self.config.training.trainer.accumulate_grad_batches
+            scheduler = LinearLR(optimizer = optimizer,
+                                 start_factor = optim_config.lr_schedulers.LinearLR.start_factor, 
+                                 end_factor = optim_config.lr_schedulers.LinearLR.end_factor, 
+                                 total_iters = total_iters)
+            
+            return {"optimizer": optimizer,
+                    "lr_scheduler": {
+                        "scheduler":scheduler,
+                        "interval":"step",
+                        "frequency":1}
+                   }
 
-
+        
+        
     def training_step(self,batch, batch_idx):
         loss,logits = self.common_step(batch)
         self.log("Training Loss",loss,prog_bar = True,on_step=True,on_epoch=True)
