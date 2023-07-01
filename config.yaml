@@ -12,16 +12,16 @@ model:
   lora_config:
     task_type: "SEQ_2_SEQ_LM"
     inference_mode: False
-    r: 8
+    r: 32
     lora_alpha: 32
     lora_dropout: 0.1
 
   generation_config:
     max_length: 128
     num_beams: 4
-    top_k: 20
+    top_k: null
     top_p: null
-    do_sample: True
+    do_sample: False
     temperature: null
     no_repeat_ngram_size: 4
     penalty_alpha: null
@@ -34,9 +34,9 @@ training:
   trainer:
     devices: auto
     num_nodes: 1
-    max_epochs: 5
+    max_epochs: 1
     max_steps: -1
-    accumulate_grad_batches: 32
+    accumulate_grad_batches: 16
     precision: 32 # should be set to 16 for O1 and O2 to enable the AMP.
     accelerator: gpu
     log_every_n_steps: 5
@@ -55,7 +55,7 @@ training:
       monitor: Validation Loss
       save_on_train_epoch_end: True
       every_n_epochs: 1
-      save_top_k: 2
+      save_top_k: 1
 
     model_summary:
       _target_: lightning.pytorch.callbacks.ModelSummary
@@ -69,6 +69,12 @@ training:
         weight_decay: 0.0
 
     lr_schedulers:
+      use: LinearLR
+      
+      LinearLR:
+        start_factor: 1.0
+        end_factor: 0.05
+        
       ConstantLR:
         factor: 0.9
         total_iters: 5
@@ -78,15 +84,15 @@ training:
 
 data:
   files:
-    train_data_source: /workspaces/codespaces-blank/test_data.csv
-    valid_data_source: /workspaces/codespaces-blank/test_data.csv
-    test_data_source: /workspaces/codespaces-blank/test_data.csv
+    train_data_source: /home/studio-lab-user/summarization/data/train_data.csv
+    valid_data_source: /home/studio-lab-user/summarization/data/valid_data.csv
+    test_data_source: /home/studio-lab-user/summarization/data/test_data.csv
 
 
   params:
     slices: # To use only a subset of the dataset 
-      train: [0,8000]
-      valid: [0,1000]
+      train: [0,33000]
+      valid: [0,3000]
       test: [0,1000]
   
     train_batch_size: 1
