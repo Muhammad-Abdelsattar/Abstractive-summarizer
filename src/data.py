@@ -48,7 +48,7 @@ class SummarizationDataset(Dataset):
 
 
     def __getitem__(self,index):
-        source = self.tokenizer("Doc to summarize: "+self.dataset.iloc[index][self.source_key],
+        source = self.tokenizer("Summarize: "+self.dataset.iloc[index][self.source_key],
                                 return_tensors="pt",
                                 truncation=True,
                                 max_length=self.source_max_len)
