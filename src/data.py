@@ -11,7 +11,6 @@ from transformers import (PreTrainedTokenizer,
                           AutoTokenizer)
 from lightning import LightningDataModule
 
-os.environ['CURL_CA_BUNDLE'] = ''
 
 @dataclass
 class DataPoint:
@@ -27,6 +26,8 @@ class SummarizationDataset(Dataset):
                  tokenizer: PreTrainedTokenizer,
                  source_key = "source",
                  target_key = "target",
+                 prepend_input_prompt= None,
+                 prepend_output_prompt= None,
                  source_max_len = 2048,
                  target_max_len = 256,
                  data_slice = None
@@ -35,7 +36,16 @@ class SummarizationDataset(Dataset):
             self.dataset = dataset.iloc[data_slice[0]:data_slice[1]]
         else:
             self.dataset = dataset
-
+        if(prepend_input_prompt):
+            self.prepend_input_prompt = prepend_input_prompt
+        else:
+            self.prepend_input_prompt = ''
+            
+        if(prepend_output_prompt):
+            self.prepend_output_prompt = prepend_output_prompt
+        else:
+            self.prepend_output_prompt = ''
+            
         self.tokenizer = tokenizer
         self.source_max_len = source_max_len
         self.target_max_len = target_max_len
@@ -48,12 +58,13 @@ class SummarizationDataset(Dataset):
 
 
     def __getitem__(self,index):
-        source = self.tokenizer("Summarize: "+self.dataset.iloc[index][self.source_key],
+        
+        source = self.tokenizer(self.prepend_input_prompt+self.dataset.iloc[index][self.source_key],
                                 return_tensors="pt",
                                 truncation=True,
                                 max_length=self.source_max_len)
 
-        target = self.tokenizer(self.dataset.iloc[index][self.target_key],
+        target = self.tokenizer(self.prepend_output_prompt+self.dataset.iloc[index][self.target_key],
                                 return_tensors="pt",
                                 truncation=True,
                                 max_length=self.target_max_len)
@@ -64,7 +75,7 @@ class SummarizationDataset(Dataset):
         target_ids[target_ids == 0] = -100 #this replaces the padding token id (0) by -100 so that it doesn't contribute to the cross entropy loss.
         target_mask = target["attention_mask"].squeeze(0)
         return DataPoint(source_ids,source_mask,target_ids,target_mask)
-
+    
 
 class SummarizationDataModule(LightningDataModule):
     def __init__(self,
@@ -102,6 +113,8 @@ class SummarizationDataModule(LightningDataModule):
                                                   source_max_len = self.source_max_len,
                                                   target_max_len = self.target_max_len,
                                                   tokenizer = self.tokenizer,
+                                                  prepend_input_prompt= self.config.data.params.prepend_input_prompt,
+                                                  prepend_output_prompt= self.config.data.params.prepend_output_prompt,
                                                   data_slice=self.slices.train)
 
         self.valid_dataset = SummarizationDataset(dataset = self.valid_df,
@@ -110,6 +123,8 @@ class SummarizationDataModule(LightningDataModule):
                                                   source_max_len = self.source_max_len,
                                                   target_max_len = self.target_max_len,
                                                   tokenizer = self.tokenizer,
+                                                  prepend_input_prompt= self.config.data.params.prepend_input_prompt,
+                                                  prepend_output_prompt= self.config.data.params.prepend_output_prompt,
                                                   data_slice=self.slices.valid)
 
         self.test_dataset = SummarizationDataset(dataset = self.test_df,
@@ -118,6 +133,8 @@ class SummarizationDataModule(LightningDataModule):
                                                   source_max_len = self.source_max_len,
                                                   target_max_len = self.target_max_len,
                                                   tokenizer = self.tokenizer,
+                                                  prepend_input_prompt= self.config.data.params.prepend_input_prompt,
+                                                  prepend_output_prompt= self.config.data.params.prepend_output_prompt,
                                                   data_slice=self.slices.test)
 
 
