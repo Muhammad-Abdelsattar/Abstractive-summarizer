@@ -43,8 +43,8 @@ class AbstractiveSummarizationModule(LightningModule):
                                     inference_mode=lora_conf.inference_mode,
                                     lora_dropout=lora_conf.lora_dropout,
                                     lora_alpha=lora_conf.lora_alpha,
-                                    r=lora_conf.r
-
+                                    r=lora_conf.r,
+                                    target_modules = lora_conf.target_modules
                                     )
 
             print("Using LoRa for fine tuning.")
@@ -65,8 +65,8 @@ class AbstractiveSummarizationModule(LightningModule):
         output = self.model(
             input_ids=input_dict["input_ids"],
             attention_mask=input_dict["input_attention_mask"],
-            labels=input_dict["target_ids"],
-            decoder_attention_mask = input_dict["target_attention_mask"]
+            labels=input_dict["target_ids"]
+            # decoder_attention_mask = input_dict["target_attention_mask"]
         )
         return output.loss, output.logits
 
