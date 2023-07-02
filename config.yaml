@@ -49,9 +49,14 @@ training:
     # resume_from_checkpoint: null
     num_sanity_val_steps: 0
     enable_checkpointing: True
-    logger: False
+    # logger: False
     # strategy: null
     gradient_clip_val: 1.0
+
+  logger:
+    _target_: lightning.pytorch.loggers.CSVLogger
+    save_dir: ./logs
+    name: exp_logs
 
   callbacks:
     checkpointing:
