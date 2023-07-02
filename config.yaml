@@ -1,5 +1,9 @@
 model:
-  model_id: bigscience/mt0-base
+  model_id: facebook/mbart-large-50
+  
+  tokenizer_args:
+     src_lang: ar_AR
+     tgt_lang: ar_AR
 
   use_peft_config: prefix
 
@@ -12,10 +16,11 @@ model:
   lora_config:
     task_type: "SEQ_2_SEQ_LM"
     inference_mode: False
-    r: 32
+    target_modules: ["q_proj","v_proj"]
+    r: 8
     lora_alpha: 32
-    lora_dropout: 0.1
-
+    lora_dropout: 0.05
+    
   generation_config:
     max_length: 128
     num_beams: 4
@@ -34,11 +39,11 @@ training:
   trainer:
     devices: auto
     num_nodes: 1
-    max_epochs: 1
+    max_epochs: 2
     max_steps: -1
     accumulate_grad_batches: 16
     precision: 32 # should be set to 16 for O1 and O2 to enable the AMP.
-    accelerator: gpu
+    accelerator: cpu
     log_every_n_steps: 5
     val_check_interval: 1.0
     # resume_from_checkpoint: null
@@ -64,12 +69,12 @@ training:
   optim:
     optimizers:
       AdamW:
-        lr: 1e-3
+        lr: 3e-4
         betas: [0.9,0.999]
         weight_decay: 0.0
 
     lr_schedulers:
-      use: LinearLR
+      use: no_sched
       
       LinearLR:
         start_factor: 1.0
@@ -91,14 +96,17 @@ data:
 
   params:
     slices: # To use only a subset of the dataset 
-      train: [0,33000]
-      valid: [0,3000]
-      test: [0,1000]
+      train: [0,8000]
+      valid: [0,1000]
+      test: [0,1]
+  
   
     train_batch_size: 1
     valid_test_batch_size: 1
     source_key: source
     target_key: target
-    source_max_len: 2048
+    prepend_input_prompt: Summarize
+    prepend_output_prompt: null
+    source_max_len: 1024
     target_max_len: 256
     num_workers: 0
