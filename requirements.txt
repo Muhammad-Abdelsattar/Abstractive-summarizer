@@ -7,3 +7,4 @@ torch
 transformers
 rouge
 sentencepiece
+protobuf==3.19.0
