@@ -6,3 +6,4 @@ peft
 torch
 transformers
 rouge
+sentencepiece
