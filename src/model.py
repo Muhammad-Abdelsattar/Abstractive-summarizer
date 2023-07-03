@@ -12,6 +12,7 @@ from peft import (PrefixTuningConfig,
                   LoraConfig,
                   get_peft_model)
 from lightning import LightningModule
+from rouge import Rouge
 
 
 class AbstractiveSummarizationModule(LightningModule):
@@ -21,6 +22,7 @@ class AbstractiveSummarizationModule(LightningModule):
         self.config = config
         self.model = self._prepare_model()
         self.tokenizer = AutoTokenizer.from_pretrained(self.config.model.model_id)
+        self.scorer = Rouge()
 
 
     def _prepare_model(self):
@@ -112,7 +114,14 @@ class AbstractiveSummarizationModule(LightningModule):
 
 
     def validation_step(self,batch,batch_idx):
+        generation_config = self.config.model.generation_config.copy()
         loss,logits = self.common_step(batch)
+        out = self.model.generate(input_ids=batch["input_ids"].to(device=self.device),
+                                      **generation_config)    
+        ref = self.tokenizer.decode(batch["target_ids"][0],skip_special_tokens=True)
+        hyp = self.tokenizer.decode(out[0],skip_special_tokens=True)
+        score = self.scorer.get_scores(hyp,ref,avg=True)
+        self.log("Rouge-l",score["rouge-l"]["f"],prog_bar = True, on_epoch=True,on_step=True)
         self.log("Validation Loss",loss,prog_bar = True, on_epoch=True)
         return loss
 
