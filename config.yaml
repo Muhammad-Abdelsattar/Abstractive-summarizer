@@ -39,11 +39,11 @@ training:
   trainer:
     devices: auto
     num_nodes: 1
-    max_epochs: 2
+    max_epochs: 4
     max_steps: -1
     accumulate_grad_batches: 16
     precision: 32 # should be set to 16 for O1 and O2 to enable the AMP.
-    accelerator: cpu
+    accelerator: gpu
     log_every_n_steps: 5
     val_check_interval: 1.0
     # resume_from_checkpoint: null
@@ -63,6 +63,7 @@ training:
       _target_: lightning.pytorch.callbacks.ModelCheckpoint
       dirpath: ./checkpoints/
       monitor: Rouge-l
+      mode: max
       save_on_train_epoch_end: True
       every_n_epochs: 1
       save_top_k: 1
@@ -74,12 +75,12 @@ training:
   optim:
     optimizers:
       AdamW:
-        lr: 3e-4
+        lr: 1e-4
         betas: [0.9,0.999]
         weight_decay: 0.0
 
     lr_schedulers:
-      use: no_sched
+      use: LinearLR
       
       LinearLR:
         start_factor: 1.0
@@ -101,7 +102,7 @@ data:
 
   params:
     slices: # To use only a subset of the dataset 
-      train: [0,30000]
+      train: [0,10000]
       valid: [0,154]
       test: [0,1]
   
