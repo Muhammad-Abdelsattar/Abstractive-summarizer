@@ -62,7 +62,7 @@ training:
     checkpointing:
       _target_: lightning.pytorch.callbacks.ModelCheckpoint
       dirpath: ./checkpoints/
-      monitor: Validation Loss
+      monitor: Rouge-l
       save_on_train_epoch_end: True
       every_n_epochs: 1
       save_top_k: 1
