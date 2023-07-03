@@ -95,14 +95,14 @@ training:
 data:
   files:
     train_data_source: /home/studio-lab-user/summarization/data/train_data.csv
-    valid_data_source: /home/studio-lab-user/summarization/data/valid_data.csv
+    valid_data_source: /home/studio-lab-user/summarization/data/labeled.csv
     test_data_source: /home/studio-lab-user/summarization/data/test_data.csv
 
 
   params:
     slices: # To use only a subset of the dataset 
-      train: [0,8000]
-      valid: [0,1000]
+      train: [0,30000]
+      valid: [0,154]
       test: [0,1]
   
   
